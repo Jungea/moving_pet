@@ -1,12 +1,13 @@
 import type { PetBehavior, PetState } from "../../shared/pet-state.js";
-export interface BehaviorConfig { idleDurationMs: number; walkDurationMs: number; speedPixelsPerSecond: number; }
-const defaultConfig: BehaviorConfig = { idleDurationMs: 2200, walkDurationMs: 5000, speedPixelsPerSecond: 70 };
+export interface BehaviorConfig { idleDurationMs: number; walkDurationMs: number; sleepDurationMs: number; speedPixelsPerSecond: number; }
+const defaultConfig: BehaviorConfig = { idleDurationMs: 2200, walkDurationMs: 5000, sleepDurationMs: 3600, speedPixelsPerSecond: 70 };
 export class BasicBehaviorSystem {
   private elapsedInBehavior = 0;
   public constructor(private readonly config: BehaviorConfig = defaultConfig) {}
+  public reset(): void { this.elapsedInBehavior = 0; }
   public update(state: PetState, deltaMs: number, maxX: number): PetState {
     this.elapsedInBehavior += deltaMs;
-    const duration = state.behavior === "idle" ? this.config.idleDurationMs : this.config.walkDurationMs;
+    const duration = this.getDuration(state.behavior);
     const next = { ...state };
     if (this.elapsedInBehavior >= duration) { this.elapsedInBehavior %= duration; next.behavior = this.nextBehavior(state.behavior); }
     if (next.behavior === "walk") {
@@ -16,5 +17,14 @@ export class BasicBehaviorSystem {
     }
     return next;
   }
-  private nextBehavior(current: PetBehavior): PetBehavior { return current === "idle" ? "walk" : "idle"; }
+  private getDuration(behavior: PetBehavior): number {
+    if (behavior === "idle") return this.config.idleDurationMs;
+    if (behavior === "walk") return this.config.walkDurationMs;
+    return this.config.sleepDurationMs;
+  }
+  private nextBehavior(current: PetBehavior): PetBehavior {
+    if (current === "idle") return "walk";
+    if (current === "walk") return "sleep";
+    return "idle";
+  }
 }

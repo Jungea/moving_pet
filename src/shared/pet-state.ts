@@ -1,3 +1,4 @@
-export type PetBehavior = "idle" | "walk";
+export type PetBehavior = "idle" | "walk" | "sleep";
 export type PetDirection = "left" | "right";
-export interface PetState { behavior: PetBehavior; direction: PetDirection; x: number; }
+export type PetMood = "calm" | "happy";
+export interface PetState { behavior: PetBehavior; direction: PetDirection; mood: PetMood; x: number; y: number; }

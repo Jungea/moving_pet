@@ -2,7 +2,7 @@
 
 ## 프로젝트 목적
 
-이 저장소는 Windows 우선 Electron Desktop Pet 프로토타입입니다. 현재 목표는 투명한 화면 오버레이 위에 임시 펫을 표시하고 `idle` / `walk` 행동, 이동, click-through, 시스템 트레이 종료를 제공하는 것입니다.
+이 저장소는 Windows 우선 Electron Desktop Pet 프로토타입입니다. 현재 목표는 투명한 화면 오버레이 위에 임시 펫을 표시하고 `idle` / `walk` / `sleep` 행동, 이동, click-through, 클릭 반응, 드래그 배치, 시스템 트레이 종료를 제공하는 것입니다.
 
 현재 범위를 임의로 확장하지 마세요. 육성 게임 요소, 저장, 인벤토리, 실제 아트, 패키징은 별도 요청이 있을 때만 구현합니다.
 
@@ -53,8 +53,8 @@ GUI 또는 Electron main 프로세스를 변경했다면, 가능하면 `npm star
 
 ## 릴리즈 문서
 
-현재 소스 릴리즈 문서는 `release/v0.1.0`에 있습니다. 사용자에게 보이는 기능, 실행 조건, 제한사항이 변경되면 아래 파일을 함께 갱신합니다.
+현재 소스 릴리즈 문서는 `release/v0.2.0`에 있습니다. 사용자에게 보이는 기능, 실행 조건, 제한사항이 변경되면 아래 파일을 함께 갱신합니다.
 
-- `release/v0.1.0/README.md`
-- `release/v0.1.0/RELEASE_NOTES.md`
-- `release/v0.1.0/MANIFEST.md`
+- `release/v0.2.0/README.md`
+- `release/v0.2.0/RELEASE_NOTES.md`
+- `release/v0.2.0/MANIFEST.md`
