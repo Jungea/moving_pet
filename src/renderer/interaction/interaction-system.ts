@@ -10,6 +10,7 @@ export class InteractionSystem {
   private dragging = false;
   private didDrag = false;
   private grabOffset = { x: 0, y: 0 };
+  private dragOrigin = { x: 0, y: 0 };
   private pointer: { x: number; y: number } | null = null;
   public constructor(private readonly petElement: HTMLElement, private readonly callbacks: InteractionCallbacks) {}
   public start(): void {
@@ -21,6 +22,8 @@ export class InteractionSystem {
   private readonly onMouseMove = (event: MouseEvent): void => {
     this.pointer = { x: event.clientX, y: event.clientY };
     if (this.dragging) {
+      const distance = Math.hypot(event.clientX - this.dragOrigin.x, event.clientY - this.dragOrigin.y);
+      if (distance < 4 && !this.didDrag) return;
       const x = Math.max(0, Math.min(window.innerWidth - this.petElement.offsetWidth, event.clientX - this.grabOffset.x));
       const y = Math.max(0, Math.min(window.innerHeight - this.petElement.offsetHeight, event.clientY - this.grabOffset.y));
       this.didDrag = true;
@@ -33,6 +36,7 @@ export class InteractionSystem {
     const rect = this.petElement.getBoundingClientRect();
     this.dragging = true;
     this.didDrag = false;
+    this.dragOrigin = { x: event.clientX, y: event.clientY };
     this.grabOffset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     this.callbacks.onDragStart();
   };

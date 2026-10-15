@@ -1,1 +1,29 @@
-<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moving Pet</title><link rel="stylesheet" href="./styles.css"></head><body><main id="pet" class="pet" data-behavior="idle" data-direction="right" aria-label="데스크톱 펫"><div class="pet__sprite"><div class="pet__ear pet__ear--left"></div><div class="pet__ear pet__ear--right"></div><div class="pet__face"><span class="pet__eye"></span><span class="pet__eye"></span><span class="pet__mouth"></span></div></div><span class="pet__status">idle</span></main><script type="module" src="./main.js"></script></body></html>
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Moving Pet</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main id="pet" class="pet" data-behavior="idle" data-direction="right" aria-label="데스크톱 펫">
+      <aside class="pet__panel" aria-label="펫 상태" hidden>
+        <strong>상태</strong>
+        <div class="stat"><span>배고픔</span><div class="stat__track"><i data-fill="hunger"></i></div><output data-stat="hunger">20</output></div>
+        <div class="stat"><span>에너지</span><div class="stat__track"><i data-fill="energy"></i></div><output data-stat="energy">80</output></div>
+      </aside>
+      <div class="pet__sprite">
+        <div class="pet__ear pet__ear--left"></div>
+        <div class="pet__ear pet__ear--right"></div>
+        <div class="pet__face">
+          <span class="pet__eye"></span>
+          <span class="pet__eye"></span>
+          <span class="pet__mouth"></span>
+        </div>
+      </div>
+      <span class="pet__status">idle</span>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

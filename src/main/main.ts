@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from "electron";
 import path from "node:path";
+import { PetSaveSystem } from "./save/pet-save-system";
 
 let petWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -29,7 +30,19 @@ function createTray(): void {
 }
 
 app.whenReady().then(() => {
-  ipcMain.on("pet:set-interactive", (_event, interactive: boolean) => petWindow?.setIgnoreMouseEvents(!interactive, { forward: true }));
+  const saveSystem = new PetSaveSystem(path.join(app.getPath("userData"), "save"));
+  ipcMain.on("pet:set-interactive", (event, interactive: boolean) => {
+    if (event.sender !== petWindow?.webContents || typeof interactive !== "boolean") return;
+    petWindow.setIgnoreMouseEvents(!interactive, { forward: true });
+  });
+  ipcMain.handle("pet:load-state", (event) => {
+    if (event.sender !== petWindow?.webContents) throw new Error("Untrusted state request");
+    return saveSystem.load();
+  });
+  ipcMain.handle("pet:save-state", (event, state: unknown) => {
+    if (event.sender !== petWindow?.webContents) throw new Error("Untrusted state request");
+    return saveSystem.save(state);
+  });
   createPetWindow();
   createTray();
   screen.on("display-metrics-changed", () => petWindow?.setBounds(screen.getPrimaryDisplay().workArea));
