@@ -1,16 +1,33 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from "electron";
 import path from "node:path";
+import type { DesktopLayout, DesktopWorkArea } from "../shared/desktop-layout";
 import { PetSaveSystem } from "./save/pet-save-system";
 
 let petWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let activeDisplayId: number | null = null;
 
-const trayIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="17" r="12" fill="#7c5cff"/><path d="M7 10 9 3l6 6M25 10l-2-7-6 6" fill="#7c5cff" stroke="#5a3ee8" stroke-width="2"/><circle cx="12" cy="16" r="2" fill="#fff"/><circle cx="20" cy="16" r="2" fill="#fff"/><path d="M13 22q3 3 6 0" fill="none" stroke="#fff" stroke-width="2"/></svg>`;
+const trayIconPng = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAe0lEQVR4nO3TUQrAIAwDUA/qUby7/krZOtrEqqMBwY/SPDYsJXNDWu1dHmTuLsDTUgsARhwPkHcq4G2h5yRga7kLsRWwohxGzNEKtDnoFyQgFGBdbJmDEGEvIAFHAL4QMvRy9ldwAVgIdzkDAZcjCFq5FbKkWAOFFv4uA3zNSGIpFU+VAAAAAElFTkSuQmCC";
+
+function getDesktopWorkAreas(): { bounds: DesktopWorkArea; layout: DesktopLayout } {
+  const displays = screen.getAllDisplays();
+  const activeDisplay = displays.find((display) => display.id === activeDisplayId) ?? screen.getPrimaryDisplay();
+  activeDisplayId = activeDisplay.id;
+  const workArea = activeDisplay.workArea;
+  return {
+    bounds: workArea,
+    layout: {
+      width: workArea.width,
+      height: workArea.height,
+      workAreas: [{ x: 0, y: 0, width: workArea.width, height: workArea.height }]
+    }
+  };
+}
 
 function createPetWindow(): void {
-  const workArea = screen.getPrimaryDisplay().workArea;
+  const { bounds } = getDesktopWorkAreas();
   petWindow = new BrowserWindow({
-    ...workArea, frame: false, transparent: true, backgroundColor: "#00000000",
+    ...bounds, frame: false, transparent: true, backgroundColor: "#00000000",
     alwaysOnTop: true, skipTaskbar: true, resizable: false, movable: false,
     focusable: false, hasShadow: false,
     webPreferences: { preload: path.join(__dirname, "../preload/preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true }
@@ -21,12 +38,40 @@ function createPetWindow(): void {
   petWindow.on("closed", () => { petWindow = null; });
 }
 
+function refreshDesktopLayout(): void {
+  if (!petWindow) return;
+  const { bounds, layout } = getDesktopWorkAreas();
+  petWindow.setBounds(bounds);
+  petWindow.webContents.send("pet:display-layout-changed", layout);
+}
+
+function refreshTrayMenu(): void {
+  if (!tray) return;
+  const activeDisplay = screen.getAllDisplays().find((display) => display.id === activeDisplayId);
+  const displayItems = screen.getAllDisplays().map((display, index) => ({
+    label: `모니터 ${index + 1}${display.id === screen.getPrimaryDisplay().id ? " (기본)" : ""}`,
+    type: "radio" as const,
+    checked: display.id === activeDisplay?.id,
+    click: (): void => {
+      activeDisplayId = display.id;
+      refreshDesktopLayout();
+      refreshTrayMenu();
+    }
+  }));
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: "펫 표시 모니터", enabled: false },
+    ...displayItems,
+    { type: "separator" },
+    { label: "종료", click: () => app.quit() }
+  ]));
+}
+
 function createTray(): void {
-  const encoded = Buffer.from(trayIconSvg).toString("base64");
-  const icon = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${encoded}`).resize({ width: 16, height: 16 });
+  const icon = nativeImage.createFromBuffer(Buffer.from(trayIconPng, "base64"));
+  if (icon.isEmpty()) throw new Error("Failed to load tray icon");
   tray = new Tray(icon);
   tray.setToolTip("Moving Pet");
-  tray.setContextMenu(Menu.buildFromTemplate([{ label: "종료", click: () => app.quit() }]));
+  refreshTrayMenu();
 }
 
 app.whenReady().then(() => {
@@ -43,8 +88,18 @@ app.whenReady().then(() => {
     if (event.sender !== petWindow?.webContents) throw new Error("Untrusted state request");
     return saveSystem.save(state);
   });
+  ipcMain.handle("pet:get-display-layout", (event): DesktopLayout => {
+    if (event.sender !== petWindow?.webContents) throw new Error("Untrusted display request");
+    return getDesktopWorkAreas().layout;
+  });
   createPetWindow();
   createTray();
-  screen.on("display-metrics-changed", () => petWindow?.setBounds(screen.getPrimaryDisplay().workArea));
+  const refreshDisplays = (): void => {
+    refreshDesktopLayout();
+    refreshTrayMenu();
+  };
+  screen.on("display-added", refreshDisplays);
+  screen.on("display-removed", refreshDisplays);
+  screen.on("display-metrics-changed", refreshDisplays);
 });
 app.on("window-all-closed", () => app.quit());

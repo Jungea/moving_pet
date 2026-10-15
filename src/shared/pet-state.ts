@@ -1,5 +1,5 @@
 export type PetBehavior = "idle" | "walk" | "sleep";
-export type PetDirection = "left" | "right";
+export type PetDirection = "left" | "right" | "up" | "down";
 export type PetMood = "calm" | "happy";
 export const MAX_PET_LEVEL = 100;
 export function experienceForNextLevel(level: number): number { return level * 20; }

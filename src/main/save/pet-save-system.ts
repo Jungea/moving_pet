@@ -3,7 +3,7 @@ import path from "node:path";
 import { experienceForNextLevel, MAX_PET_LEVEL, type PetBehavior, type PetDirection, type SavedPetState } from "../../shared/pet-state";
 
 const behaviors: PetBehavior[] = ["idle", "walk", "sleep"];
-const directions: PetDirection[] = ["left", "right"];
+const directions: PetDirection[] = ["left", "right", "up", "down"];
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);

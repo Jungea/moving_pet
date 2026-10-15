@@ -1,4 +1,5 @@
 import type { PetState } from "../../shared/pet-state.js";
+import { movePetPosition, type PetMovementBounds } from "./pet-position.js";
 export interface BehaviorConfig {
   idleDurationMs: number;
   walkDurationMs: number;
@@ -15,9 +16,13 @@ const defaultConfig: BehaviorConfig = {
 };
 export class BasicBehaviorSystem {
   private elapsedInBehavior = 0;
-  public constructor(private readonly config: BehaviorConfig = defaultConfig) {}
+  private hasCompletedWalk = false;
+  public constructor(
+    private readonly config: BehaviorConfig = defaultConfig,
+    private readonly random: () => number = Math.random
+  ) {}
   public reset(): void { this.elapsedInBehavior = 0; }
-  public update(state: PetState, deltaMs: number, maxX: number): PetState {
+  public update(state: PetState, deltaMs: number, bounds: PetMovementBounds): PetState {
     this.elapsedInBehavior += deltaMs;
     const next = { ...state };
 
@@ -36,13 +41,30 @@ export class BasicBehaviorSystem {
     const duration = next.behavior === "idle" ? this.config.idleDurationMs : this.config.walkDurationMs;
     if (this.elapsedInBehavior >= duration) {
       this.elapsedInBehavior %= duration;
-      next.behavior = next.behavior === "idle" ? "walk" : "idle";
+      if (next.behavior === "idle") {
+        next.behavior = "walk";
+        if (this.hasCompletedWalk) next.direction = this.pickDirection();
+      } else {
+        next.behavior = "idle";
+        this.hasCompletedWalk = true;
+      }
     }
     if (next.behavior === "walk") {
-      next.x += (next.direction === "right" ? 1 : -1) * this.config.speedPixelsPerSecond * (deltaMs / 1000);
-      if (next.x <= 0) { next.x = 0; next.direction = "right"; }
-      else if (next.x >= maxX) { next.x = maxX; next.direction = "left"; }
+      const moved = movePetPosition(next, next.direction, this.config.speedPixelsPerSecond * (deltaMs / 1000), bounds);
+      next.x = moved.x;
+      next.y = moved.y;
+      if (moved.blocked) next.direction = this.opposite(next.direction);
     }
     return next;
+  }
+  private pickDirection(): PetState["direction"] {
+    const directions: PetState["direction"][] = ["left", "right", "up", "down"];
+    return directions[Math.min(directions.length - 1, Math.floor(this.random() * directions.length))]!;
+  }
+  private opposite(direction: PetState["direction"]): PetState["direction"] {
+    if (direction === "left") return "right";
+    if (direction === "right") return "left";
+    if (direction === "up") return "down";
+    return "up";
   }
 }

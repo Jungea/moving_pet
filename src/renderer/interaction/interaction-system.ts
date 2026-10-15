@@ -1,7 +1,7 @@
 export interface InteractionCallbacks {
   onClick(): void;
   onDragStart(): void;
-  onDrag(x: number, y: number): void;
+  onDrag(x: number, y: number, pointerX: number, pointerY: number): void;
   onDragEnd(): void;
 }
 
@@ -31,7 +31,7 @@ export class InteractionSystem {
       const x = Math.max(0, Math.min(window.innerWidth - this.petElement.offsetWidth, event.clientX - this.grabOffset.x));
       const y = Math.max(0, Math.min(window.innerHeight - this.petElement.offsetHeight, event.clientY - this.grabOffset.y));
       this.didDrag = true;
-      this.callbacks.onDrag(x, y);
+      this.callbacks.onDrag(x, y, event.clientX, event.clientY);
     }
     this.refresh();
   };

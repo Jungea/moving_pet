@@ -1,10 +1,12 @@
 import { BasicBehaviorSystem } from "./behavior/basic-behavior-system.js";
+import { clampPetPosition, type PetMovementBounds } from "./behavior/pet-position.js";
 import { InteractionSystem } from "./interaction/interaction-system.js";
 import { PetRenderer } from "./pet/pet-renderer.js";
 import { PetCareSystem, type CareResult } from "./state/pet-care-system.js";
 import { PetGrowthSystem } from "./state/pet-growth-system.js";
 import { PetNeedsSystem } from "./state/pet-needs-system.js";
 import type { PetState, SavedPetState } from "../shared/pet-state.js";
+import type { DesktopLayout } from "../shared/desktop-layout.js";
 const petElement = document.querySelector<HTMLElement>("#pet");
 if (!petElement) throw new Error("Pet element was not found.");
 const panelElement = document.querySelector<HTMLElement>("#pet-panel");
@@ -23,6 +25,11 @@ let lastSaveAt = 0;
 let saving = false;
 let reaction: string | null = null;
 let reactionUntil = 0;
+let desktopLayout: DesktopLayout = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+  workAreas: [{ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }]
+};
 let state: PetState = {
   behavior: "idle",
   direction: "right",
@@ -36,12 +43,12 @@ let state: PetState = {
   experience: 0
 };
 
-function clampToScreen(value: PetState): PetState {
-  return {
-    ...value,
-    x: Math.max(0, Math.min(window.innerWidth - renderer.getWidth(), value.x)),
-    y: Math.max(0, Math.min(window.innerHeight - renderer.getHeight(), value.y))
-  };
+function getMovementBounds(): PetMovementBounds {
+  return { ...desktopLayout, petWidth: renderer.getWidth(), petHeight: renderer.getHeight() };
+}
+
+function clampToScreen(value: PetState, preferredAreaPoint?: { x: number; y: number }): PetState {
+  return { ...value, ...clampPetPosition(value, getMovementBounds(), preferredAreaPoint) };
 }
 
 function toSavedState(value: PetState): SavedPetState {
@@ -89,17 +96,21 @@ const interaction = new InteractionSystem(petElement, {
     applyCare(care.pet(state));
   },
   onDragStart: () => { behavior.reset(); dragging = true; },
-  onDrag: (x, y) => { state = { ...state, x, y, behavior: "idle" }; },
+  onDrag: (x, y, pointerX, pointerY) => { state = clampToScreen({ ...state, x, y, behavior: "idle" }, { x: pointerX, y: pointerY }); },
   onDragEnd: () => { dragging = false; void saveState(); }
 }, [panelElement]);
 feedButton.addEventListener("click", () => applyCare(care.feed(state)));
 playButton.addEventListener("click", () => applyCare(care.play(state)));
+window.desktopPet.onDisplayLayoutChanged((layout) => {
+  desktopLayout = layout;
+  state = clampToScreen(state);
+});
 let previousTimestamp = performance.now();
 function tick(timestamp: number): void {
   const deltaMs = Math.min(timestamp - previousTimestamp, 100);
   previousTimestamp = timestamp;
   state = needs.update(state, deltaMs);
-  if (!dragging) state = behavior.update(state, deltaMs, Math.max(0, window.innerWidth - renderer.getWidth()));
+  if (!dragging) state = behavior.update(state, deltaMs, getMovementBounds());
   if (state.mood === "happy" && timestamp >= happyUntil) state = { ...state, mood: "calm" };
   if (reaction && timestamp >= reactionUntil) reaction = null;
   state = clampToScreen(state);
@@ -111,6 +122,7 @@ function tick(timestamp: number): void {
 
 async function start(): Promise<void> {
   try {
+    desktopLayout = await window.desktopPet.getDisplayLayout();
     const saved = await window.desktopPet.loadState();
     if (saved) state = clampToScreen({ ...saved, mood: "calm" });
   } catch (error) {
