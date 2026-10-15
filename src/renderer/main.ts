@@ -2,6 +2,7 @@ import { BasicBehaviorSystem } from "./behavior/basic-behavior-system.js";
 import { InteractionSystem } from "./interaction/interaction-system.js";
 import { PetRenderer } from "./pet/pet-renderer.js";
 import { PetCareSystem, type CareResult } from "./state/pet-care-system.js";
+import { PetGrowthSystem } from "./state/pet-growth-system.js";
 import { PetNeedsSystem } from "./state/pet-needs-system.js";
 import type { PetState, SavedPetState } from "../shared/pet-state.js";
 const petElement = document.querySelector<HTMLElement>("#pet");
@@ -13,6 +14,7 @@ if (!panelElement || !feedButton || !playButton) throw new Error("Pet controls w
 const renderer = new PetRenderer(petElement);
 const behavior = new BasicBehaviorSystem();
 const care = new PetCareSystem();
+const growth = new PetGrowthSystem();
 const needs = new PetNeedsSystem();
 let dragging = false;
 let happyUntil = 0;
@@ -29,7 +31,9 @@ let state: PetState = {
   y: Math.max(0, window.innerHeight - renderer.getHeight() - 8),
   hunger: 20,
   energy: 80,
-  affection: 10
+  affection: 10,
+  level: 1,
+  experience: 0
 };
 
 function clampToScreen(value: PetState): PetState {
@@ -42,7 +46,7 @@ function clampToScreen(value: PetState): PetState {
 
 function toSavedState(value: PetState): SavedPetState {
   return {
-    version: 2,
+    version: 3,
     behavior: value.behavior,
     direction: value.direction,
     x: value.x,
@@ -50,6 +54,8 @@ function toSavedState(value: PetState): SavedPetState {
     hunger: value.hunger,
     energy: value.energy,
     affection: value.affection,
+    level: value.level,
+    experience: value.experience,
     savedAt: Date.now()
   };
 }
@@ -68,8 +74,9 @@ async function saveState(): Promise<void> {
 }
 
 function applyCare(result: CareResult): void {
-  state = result.state;
-  reaction = result.reaction;
+  const growthResult = growth.addExperience(result.state, result.experienceGained);
+  state = growthResult.state;
+  reaction = growthResult.leveledUp ? "level up!" : result.reaction;
   reactionUntil = performance.now() + 900;
   happyUntil = state.mood === "happy" ? performance.now() + 700 : happyUntil;
   panelUntil = performance.now() + 4000;

@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { PetBehavior, PetDirection, SavedPetState } from "../../shared/pet-state";
+import { experienceForNextLevel, MAX_PET_LEVEL, type PetBehavior, type PetDirection, type SavedPetState } from "../../shared/pet-state";
 
 const behaviors: PetBehavior[] = ["idle", "walk", "sleep"];
 const directions: PetDirection[] = ["left", "right"];
@@ -12,7 +12,7 @@ function isFiniteNumber(value: unknown): value is number {
 export function parseSavedPetState(value: unknown): SavedPetState | null {
   if (!value || typeof value !== "object") return null;
   const state = value as Record<string, unknown>;
-  if (state.version !== 1 && state.version !== 2) return null;
+  if (state.version !== 1 && state.version !== 2 && state.version !== 3) return null;
   if (!behaviors.includes(state.behavior as PetBehavior)) return null;
   if (!directions.includes(state.direction as PetDirection)) return null;
   if (![state.x, state.y, state.hunger, state.energy, state.savedAt].every(isFiniteNumber)) return null;
@@ -21,9 +21,13 @@ export function parseSavedPetState(value: unknown): SavedPetState | null {
   if ((state.energy as number) < 0 || (state.energy as number) > 100) return null;
   const affection = state.version === 1 ? 10 : state.affection;
   if (!isFiniteNumber(affection) || affection < 0 || affection > 100) return null;
+  const level = state.version === 3 ? state.level : 1;
+  const experience = state.version === 3 ? state.experience : 0;
+  if (!isFiniteNumber(level) || !Number.isInteger(level) || level < 1 || level > MAX_PET_LEVEL) return null;
+  if (!isFiniteNumber(experience) || experience < 0 || experience >= experienceForNextLevel(level)) return null;
 
   return {
-    version: 2,
+    version: 3,
     behavior: state.behavior as PetBehavior,
     direction: state.direction as PetDirection,
     x: state.x as number,
@@ -31,6 +35,8 @@ export function parseSavedPetState(value: unknown): SavedPetState | null {
     hunger: state.hunger as number,
     energy: state.energy as number,
     affection,
+    level,
+    experience,
     savedAt: state.savedAt as number
   };
 }

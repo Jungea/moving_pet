@@ -5,6 +5,7 @@ export type CareReaction = "pet!" | "yum!" | "fun!" | "tired...";
 export interface CareResult {
   state: PetState;
   reaction: CareReaction;
+  experienceGained: number;
 }
 
 export interface CareConfig {
@@ -14,6 +15,9 @@ export interface CareConfig {
   playHungerGain: number;
   playAffectionGain: number;
   petAffectionGain: number;
+  petExperience: number;
+  feedExperience: number;
+  playExperience: number;
 }
 
 const defaultConfig: CareConfig = {
@@ -22,7 +26,10 @@ const defaultConfig: CareConfig = {
   playEnergyCost: 10,
   playHungerGain: 4,
   playAffectionGain: 6,
-  petAffectionGain: 1
+  petAffectionGain: 1,
+  petExperience: 1,
+  feedExperience: 3,
+  playExperience: 5
 };
 
 function clamp(value: number): number {
@@ -35,7 +42,8 @@ export class PetCareSystem {
   public pet(state: PetState): CareResult {
     return {
       state: { ...state, mood: "happy", affection: clamp(state.affection + this.config.petAffectionGain) },
-      reaction: "pet!"
+      reaction: "pet!",
+      experienceGained: this.config.petExperience
     };
   }
 
@@ -47,12 +55,13 @@ export class PetCareSystem {
         hunger: clamp(state.hunger - this.config.feedHungerReduction),
         affection: clamp(state.affection + this.config.feedAffectionGain)
       },
-      reaction: "yum!"
+      reaction: "yum!",
+      experienceGained: this.config.feedExperience
     };
   }
 
   public play(state: PetState): CareResult {
-    if (state.energy < this.config.playEnergyCost) return { state, reaction: "tired..." };
+    if (state.energy < this.config.playEnergyCost) return { state, reaction: "tired...", experienceGained: 0 };
     return {
       state: {
         ...state,
@@ -62,7 +71,8 @@ export class PetCareSystem {
         hunger: clamp(state.hunger + this.config.playHungerGain),
         affection: clamp(state.affection + this.config.playAffectionGain)
       },
-      reaction: "fun!"
+      reaction: "fun!",
+      experienceGained: this.config.playExperience
     };
   }
 }

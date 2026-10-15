@@ -1,4 +1,4 @@
-import type { PetState } from "../../shared/pet-state.js";
+import { experienceForNextLevel, type PetState } from "../../shared/pet-state.js";
 export class PetRenderer {
   public constructor(private readonly element: HTMLElement) {}
   public render(state: PetState, showPanel = false, reaction: string | null = null): void {
@@ -14,6 +14,7 @@ export class PetRenderer {
     this.renderStat("hunger", state.hunger);
     this.renderStat("energy", state.energy);
     this.renderStat("affection", state.affection);
+    this.renderGrowth(state);
   }
   public getWidth(): number { return this.element.getBoundingClientRect().width; }
   public getHeight(): number { return this.element.getBoundingClientRect().height; }
@@ -23,5 +24,14 @@ export class PetRenderer {
     const rounded = Math.round(value);
     if (output) output.value = String(rounded);
     if (fill) fill.style.width = `${rounded}%`;
+  }
+  private renderGrowth(state: PetState): void {
+    const level = this.element.querySelector<HTMLOutputElement>("[data-level]");
+    const output = this.element.querySelector<HTMLOutputElement>("[data-stat=\"experience\"]");
+    const fill = this.element.querySelector<HTMLElement>("[data-fill=\"experience\"]");
+    const required = experienceForNextLevel(state.level);
+    if (level) level.value = String(state.level);
+    if (output) output.value = `${state.experience}/${required}`;
+    if (fill) fill.style.width = `${Math.round((state.experience / required) * 100)}%`;
   }
 }
