@@ -12,7 +12,11 @@ export class InteractionSystem {
   private grabOffset = { x: 0, y: 0 };
   private dragOrigin = { x: 0, y: 0 };
   private pointer: { x: number; y: number } | null = null;
-  public constructor(private readonly petElement: HTMLElement, private readonly callbacks: InteractionCallbacks) {}
+  public constructor(
+    private readonly petElement: HTMLElement,
+    private readonly callbacks: InteractionCallbacks,
+    private readonly interactiveElements: HTMLElement[] = []
+  ) {}
   public start(): void {
     window.addEventListener("mousemove", this.onMouseMove);
     window.addEventListener("mouseup", this.onMouseUp);
@@ -33,6 +37,7 @@ export class InteractionSystem {
   };
   private readonly onMouseDown = (event: MouseEvent): void => {
     if (event.button !== 0) return;
+    if (this.interactiveElements.some((element) => element.contains(event.target as Node))) return;
     const rect = this.petElement.getBoundingClientRect();
     this.dragging = true;
     this.didDrag = false;
@@ -50,9 +55,14 @@ export class InteractionSystem {
   public refresh(): void {
     if (this.dragging) return;
     if (!this.pointer) return;
-    const rect = this.petElement.getBoundingClientRect();
-    const isOverPet = this.pointer.x >= rect.left && this.pointer.x <= rect.right && this.pointer.y >= rect.top && this.pointer.y <= rect.bottom;
-    if (isOverPet !== this.interactive) { this.interactive = isOverPet; window.desktopPet.setInteractive(isOverPet); }
+    const isOverInteractiveArea = [this.petElement, ...this.interactiveElements].some((element) => {
+      const rect = element.getBoundingClientRect();
+      return this.pointer !== null && this.pointer.x >= rect.left && this.pointer.x <= rect.right && this.pointer.y >= rect.top && this.pointer.y <= rect.bottom;
+    });
+    if (isOverInteractiveArea !== this.interactive) {
+      this.interactive = isOverInteractiveArea;
+      window.desktopPet.setInteractive(isOverInteractiveArea);
+    }
   }
   private readonly disableInteraction = (): void => {
     if (this.dragging) this.callbacks.onDragEnd();

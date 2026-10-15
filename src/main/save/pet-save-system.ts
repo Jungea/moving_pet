@@ -12,22 +12,25 @@ function isFiniteNumber(value: unknown): value is number {
 export function parseSavedPetState(value: unknown): SavedPetState | null {
   if (!value || typeof value !== "object") return null;
   const state = value as Record<string, unknown>;
-  if (state.version !== 1) return null;
+  if (state.version !== 1 && state.version !== 2) return null;
   if (!behaviors.includes(state.behavior as PetBehavior)) return null;
   if (!directions.includes(state.direction as PetDirection)) return null;
   if (![state.x, state.y, state.hunger, state.energy, state.savedAt].every(isFiniteNumber)) return null;
   if ((state.x as number) < 0 || (state.y as number) < 0) return null;
   if ((state.hunger as number) < 0 || (state.hunger as number) > 100) return null;
   if ((state.energy as number) < 0 || (state.energy as number) > 100) return null;
+  const affection = state.version === 1 ? 10 : state.affection;
+  if (!isFiniteNumber(affection) || affection < 0 || affection > 100) return null;
 
   return {
-    version: 1,
+    version: 2,
     behavior: state.behavior as PetBehavior,
     direction: state.direction as PetDirection,
     x: state.x as number,
     y: state.y as number,
     hunger: state.hunger as number,
     energy: state.energy as number,
+    affection,
     savedAt: state.savedAt as number
   };
 }

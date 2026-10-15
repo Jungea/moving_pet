@@ -9,15 +9,17 @@ export interface PetState {
   y: number;
   hunger: number;
   energy: number;
+  affection: number;
 }
 
 export interface SavedPetState {
-  version: 1;
+  version: 2;
   behavior: PetBehavior;
   direction: PetDirection;
   x: number;
   y: number;
   hunger: number;
   energy: number;
+  affection: number;
   savedAt: number;
 }

@@ -3,7 +3,7 @@ import test from "node:test";
 import { PetNeedsSystem } from "../src/renderer/state/pet-needs-system";
 import type { PetState } from "../src/shared/pet-state";
 
-const base: PetState = { behavior: "idle", direction: "right", mood: "calm", x: 10, y: 20, hunger: 20, energy: 80 };
+const base: PetState = { behavior: "idle", direction: "right", mood: "calm", x: 10, y: 20, hunger: 20, energy: 80, affection: 10 };
 const system = new PetNeedsSystem({ hungerPerMinute: 10, awakeEnergyLossPerMinute: 20, sleepEnergyRecoveryPerMinute: 30 });
 
 test("깨어 있는 동안 배고픔은 증가하고 에너지는 감소한다", () => {
